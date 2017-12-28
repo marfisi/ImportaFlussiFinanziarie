@@ -92,19 +92,21 @@ public class ImportaFlussiFinanziarie{
 		
 		Iterator<RowInput> iter_rowInputLs = rowInputLs.iterator();
 		// salto l'intestazione
-		rowInput = (RowInputCompass)iter_rowInputLs.next();
+		rowInput = (RowInput)iter_rowInputLs.next();
 		while(iter_rowInputLs.hasNext()){
 			
+			String codicePratica = "";
 			if(finanziaria.equals("COM")){
 				rowInput = (RowInputCompass)iter_rowInputLs.next();
+				codicePratica =  ((RowInputCompass)rowInput).getCod_Pratica();
 			}else if(finanziaria.equals("AGO")){
 				rowInput = (RowInputAgos)iter_rowInputLs.next();
+				codicePratica =  ((RowInputAgos)rowInput).getCd_pratica();
 			}else{
 				log.error("non e' possibile questa finanziaria: " + finanziaria);
 			}
-		
-		
-			AsFinax0f asFinax0f = asFinax0fDao.getDaFnfinFncop(finanziaria, ((RowInputCompass)rowInput).getCod_Pratica());
+			
+			AsFinax0f asFinax0f = asFinax0fDao.getDaFnfinFncop(finanziaria, codicePratica);
 			if(asFinax0f != null){
 				log.info("Pratica " + asFinax0f.getId() + " gia' presente");
 				continue;		// se la pratica e' gia' presente la salto
@@ -137,6 +139,30 @@ public class ImportaFlussiFinanziarie{
 				
 			}else if(finanziaria.equals("AGO")){
 				RowInputAgos rowInputAgos = (RowInputAgos)rowInput;
+				
+				asFinax0f = new AsFinax0f();
+				AsFinax0fPKey asFinax0fPKey = new AsFinax0fPKey();
+				asFinax0fPKey.setFnfin(finanziaria);
+				asFinax0fPKey.setFncop(rowInputAgos.getCd_pratica());
+				asFinax0f.setId(asFinax0fPKey);
+				asFinax0f.setFncpv(rowInputAgos.getCd_punto_vendita());
+				asFinax0f.setFndal(Integer.parseInt(rowInputAgos.getData_liquidazione()));
+				asFinax0f.setFndav(0);
+				asFinax0f.setFnimp(Float.parseFloat(rowInputAgos.getIm_finanziato()));
+				try{
+					asFinax0f.setFnims(Float.parseFloat(rowInputAgos.getIm_contributo()));
+				}catch(NumberFormatException e){
+					asFinax0f.setFnims(0.0f);
+				}
+				asFinax0f.setFniml(Float.parseFloat(rowInputAgos.getIm_erogato()));
+				asFinax0f.setFnbap("B");
+				asFinax0f.setFnras(rowInputAgos.getCliente());
+				asFinax0f.setFntab(rowInputAgos.getTabella_finanziaria());
+				asFinax0f.setFnrie(" ");
+				
+				asFinax0fDao.salva(asFinax0f);
+				
+				log.info("Pratica " + asFinax0f.getId() + " inserita");
 			}else{
 				log.error("non e' possibile questa finanziaria: " + finanziaria);
 			}

@@ -19,8 +19,6 @@ public class RowInputCompass extends RowInput{
 	private String causalePlf;
 	private String importoPl;
 	
-	
-	
 	public RowInputCompass(String line){
 		super(line);
 		
