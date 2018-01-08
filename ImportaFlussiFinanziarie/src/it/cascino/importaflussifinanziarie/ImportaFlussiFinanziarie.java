@@ -24,9 +24,11 @@ import it.cascino.importaflussifinanziarie.dbas.model.pkey.AsFinax0fPKey;
 import it.cascino.importaflussifinanziarie.righeflussi.RowInput;
 import it.cascino.importaflussifinanziarie.righeflussi.RowInputAgos;
 import it.cascino.importaflussifinanziarie.righeflussi.RowInputCompass;
+import it.cascino.importaflussifinanziarie.righeflussi.RowInputFindomestic;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.math.BigDecimal;
 
 public class ImportaFlussiFinanziarie{
 	
@@ -68,7 +70,9 @@ public class ImportaFlussiFinanziarie{
 			
 			int rigo = 0;
 			while((line = in.readLine()) != null){
-				if(finanziaria.equals("COM")){
+				if(finanziaria.equals("FIN")){
+					rowInput = new RowInputFindomestic(line);
+				}else if(finanziaria.equals("COM")){
 					rowInput = new RowInputCompass(line);
 				}else if(finanziaria.equals("AGO")){
 					rowInput = new RowInputAgos(line);
@@ -96,7 +100,10 @@ public class ImportaFlussiFinanziarie{
 		while(iter_rowInputLs.hasNext()){
 			
 			String codicePratica = "";
-			if(finanziaria.equals("COM")){
+			if(finanziaria.equals("FIN")){
+				rowInput = (RowInputFindomestic)iter_rowInputLs.next();
+				codicePratica =  ((RowInputFindomestic)rowInput).getCir();
+			}else if(finanziaria.equals("COM")){
 				rowInput = (RowInputCompass)iter_rowInputLs.next();
 				codicePratica =  ((RowInputCompass)rowInput).getCod_Pratica();
 			}else if(finanziaria.equals("AGO")){
@@ -114,7 +121,31 @@ public class ImportaFlussiFinanziarie{
 			
 			// se sono qui' la pratica non e' stata trovata, si deve inserire/importare
 			
-			if(finanziaria.equals("COM")){
+			if(finanziaria.equals("FIN")){
+				RowInputFindomestic rowInputFindomestic = (RowInputFindomestic)rowInput;
+				
+				asFinax0f = new AsFinax0f();
+				AsFinax0fPKey asFinax0fPKey = new AsFinax0fPKey();
+				asFinax0fPKey.setFnfin(finanziaria);
+				asFinax0fPKey.setFncop(rowInputFindomestic.getCir());
+				asFinax0f.setId(asFinax0fPKey);
+				asFinax0f.setFncpv(rowInputFindomestic.getTvei());
+				asFinax0f.setFndal(Integer.parseInt(rowInputFindomestic.getData()));
+				asFinax0f.setFndav(0);
+				BigDecimal bd = new BigDecimal(rowInputFindomestic.getFinanziato());
+				bd = bd.subtract(new BigDecimal(rowInputFindomestic.getSip()));
+				asFinax0f.setFnimp(bd.floatValue());
+				asFinax0f.setFnims(-Float.parseFloat(rowInputFindomestic.getTrattenute()));
+				asFinax0f.setFniml(Float.parseFloat(rowInputFindomestic.getLiquidato()));
+				asFinax0f.setFnbap((rowInputFindomestic.getModPag().compareTo("B") == 0) ? "B" : "B");
+				asFinax0f.setFnras(rowInputFindomestic.getCliente());
+				asFinax0f.setFntab("ND");
+				asFinax0f.setFnrie(" ");
+				
+				asFinax0fDao.salva(asFinax0f);
+				
+				log.info("Pratica " + asFinax0f.getId() + " inserita");	
+			}else if(finanziaria.equals("COM")){
 				RowInputCompass rowInputCompass = (RowInputCompass)rowInput;
 				
 				asFinax0f = new AsFinax0f();
@@ -135,8 +166,7 @@ public class ImportaFlussiFinanziarie{
 				
 				asFinax0fDao.salva(asFinax0f);
 				
-				log.info("Pratica " + asFinax0f.getId() + " inserita");
-				
+				log.info("Pratica " + asFinax0f.getId() + " inserita");				
 			}else if(finanziaria.equals("AGO")){
 				RowInputAgos rowInputAgos = (RowInputAgos)rowInput;
 				
