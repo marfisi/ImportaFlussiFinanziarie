@@ -188,6 +188,9 @@ public class ImportaFlussiFinanziarie{
 				asFinax0f.setFnbap("B");
 				asFinax0f.setFnras(rowInputAgos.getCliente());
 				asFinax0f.setFntab(rowInputAgos.getTabella_finanziaria());
+				if(StringUtils.equals(rowInputAgos.getTp_credito(), "R")){
+					asFinax0f.setFntab("FSL");
+				}
 				asFinax0f.setFnrie(" ");
 				
 				asFinax0fDao.salva(asFinax0f);

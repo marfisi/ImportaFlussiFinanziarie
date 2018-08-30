@@ -17,8 +17,9 @@ public class RowInputAgos extends RowInput{
 	private String nm_rate;
 	private String flag_cpi;
 	private String flag_good_p;
-	private String tp_credito;	
-	
+	private String tp_credito;
+	private String ccpra_tp_acquisto;	
+
 	public RowInputAgos(String line){
 		super(line);
 		
@@ -38,10 +39,13 @@ public class RowInputAgos extends RowInput{
 		setFlag_cpi("");
 		setFlag_good_p("");
 		setTp_credito("");
+		setCcpra_tp_acquisto("");
 		
 		String strTmp = line;
 
-		setCd_pratica(strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim());
+		String cod_prat = "0" + strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim();
+		cod_prat = StringUtils.right(cod_prat, 9);
+		setCd_pratica(cod_prat);
 		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1);
 		
 		setCliente(StringUtils.left(strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim(), 25));
@@ -103,8 +107,12 @@ public class RowInputAgos extends RowInput{
 		// salto: flag_good_p
 		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
 
-		// salto: tp_credito
+		setTp_credito(strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim());
+		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
+
+		// salto: ccpra_tp_acquisto
 		strTmp = "";
+
 	}
 
 	public String getCd_pratica(){
@@ -225,5 +233,13 @@ public class RowInputAgos extends RowInput{
 
 	public void setTp_credito(String tp_credito){
 		this.tp_credito = tp_credito;
+	}
+	
+	public String getCcpra_tp_acquisto(){
+		return ccpra_tp_acquisto;
+	}
+
+	public void setCcpra_tp_acquisto(String ccpra_tp_acquisto){
+		this.ccpra_tp_acquisto = ccpra_tp_acquisto;
 	}
 }
