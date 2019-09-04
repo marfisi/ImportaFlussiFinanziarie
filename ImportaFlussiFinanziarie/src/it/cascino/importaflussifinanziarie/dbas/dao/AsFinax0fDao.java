@@ -13,6 +13,8 @@ public interface AsFinax0fDao{
 //	void elimina(AsFinax0f a);
 
 	AsFinax0f getDaFnfinFncop(String fnfin, String fncop);
+	
+	List<AsFinax0f> getDaFnfinLikeFncop(String fnfin, String fncop);
 		
 	void close();
 }

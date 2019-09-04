@@ -2,13 +2,8 @@ package it.cascino.importaflussifinanziarie.righeflussi;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class RowInputFindomestic extends RowInput{
+public class RowInputFindomesticSWR extends RowInput{
 	private String cliente;
-	private String societa;
-	private String tvei;
-	private String insegna;
-	private String indirizzo;
-	private String localita;
 	private String tipoPratica;
 	private String finanziato;
 	private String liquidato;
@@ -18,19 +13,15 @@ public class RowInputFindomestic extends RowInput{
 	private String forzaVendita;
 	private String eco;
 	private String modPag;
+	private String societa;
 	private String data;
 	private String cir;
 	
-	public RowInputFindomestic(String line){
+	public RowInputFindomesticSWR(String line){
 		super(line);
 		
 		super.setDelimitator(";");
 		setCliente("");
-		setSocieta("");
-		setTvei("");
-		setInsegna("");
-		setIndirizzo("");
-		setLocalita("");
 		setTipoPratica("");
 		setFinanziato("");
 		setLiquidato("");
@@ -40,6 +31,7 @@ public class RowInputFindomestic extends RowInput{
 		setForzaVendita("");
 		setEco("");
 		setModPag("");
+		setSocieta("");
 		setData("");
 		setCir("");
 
@@ -47,22 +39,7 @@ public class RowInputFindomestic extends RowInput{
 		
 		setCliente(StringUtils.left(strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim(), 25));
 		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1);
-		
-		// salto: societa
-		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
-		
-		setTvei(strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim());
-		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1);
-
-		// salto: insegna
-		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
-
-		// salto: indirizzo
-		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
-		
-		// salto: localita
-		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
-		
+				
 		// salto: tipoPratica
 		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
 
@@ -98,6 +75,9 @@ public class RowInputFindomestic extends RowInput{
 		setModPag(strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim());
 		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1);
 		
+		// salto: societa
+		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
+
 		String data = "YYYYMMDD";
 		data = strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim();
 		data = data.replace("/", "").replace(" ", "");
@@ -117,46 +97,6 @@ public class RowInputFindomestic extends RowInput{
 
 	public void setCliente(String cliente){
 		this.cliente = cliente;
-	}
-
-	public String getSocieta(){
-		return societa;
-	}
-
-	public void setSocieta(String societa){
-		this.societa = societa;
-	}
-
-	public String getTvei(){
-		return tvei;
-	}
-
-	public void setTvei(String tvei){
-		this.tvei = tvei;
-	}
-
-	public String getInsegna(){
-		return insegna;
-	}
-
-	public void setInsegna(String insegna){
-		this.insegna = insegna;
-	}
-
-	public String getIndirizzo(){
-		return indirizzo;
-	}
-
-	public void setIndirizzo(String indirizzo){
-		this.indirizzo = indirizzo;
-	}
-
-	public String getLocalita(){
-		return localita;
-	}
-
-	public void setLocalita(String localita){
-		this.localita = localita;
 	}
 
 	public String getTipoPratica(){
@@ -229,6 +169,14 @@ public class RowInputFindomestic extends RowInput{
 
 	public void setModPag(String modPag){
 		this.modPag = modPag;
+	}
+
+	public String getSocieta(){
+		return societa;
+	}
+
+	public void setSocieta(String societa){
+		this.societa = societa;
 	}
 
 	public String getData(){

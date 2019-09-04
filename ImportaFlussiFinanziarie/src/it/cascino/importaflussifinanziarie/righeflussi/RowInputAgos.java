@@ -18,6 +18,7 @@ public class RowInputAgos extends RowInput{
 	private String flag_cpi;
 	private String flag_good_p;
 	private String tp_credito;
+	private String ccpra_dt_acquisto;	
 	private String ccpra_tp_acquisto;	
 
 	public RowInputAgos(String line){
@@ -39,9 +40,10 @@ public class RowInputAgos extends RowInput{
 		setFlag_cpi("");
 		setFlag_good_p("");
 		setTp_credito("");
+		setCcpra_dt_acquisto("");
 		setCcpra_tp_acquisto("");
 		
-		String strTmp = line;
+		String strTmp = StringUtils.join(line, this.getDelimitator());
 
 		String cod_prat = "0" + strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim();
 		cod_prat = StringUtils.right(cod_prat, 9);
@@ -109,10 +111,19 @@ public class RowInputAgos extends RowInput{
 
 		setTp_credito(strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim());
 		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
-
-		// salto: ccpra_tp_acquisto
-		strTmp = "";
-
+		
+		data = "YYYYMMDD";
+		data = strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim();
+		data = StringUtils.right("0" + data, 10);
+		data = data.replace("/", "").replace(" ", "");
+		if(data.length() == 8){
+			data = data.substring(4, 8) + data.substring(2, 4) + data.substring(0, 2);
+			setCcpra_dt_acquisto(data);
+		}
+		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1);
+		
+		setCcpra_tp_acquisto(strTmp.substring(0, strTmp.indexOf(getDelimitator())).trim());
+		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1);
 	}
 
 	public String getCd_pratica(){
@@ -233,6 +244,14 @@ public class RowInputAgos extends RowInput{
 
 	public void setTp_credito(String tp_credito){
 		this.tp_credito = tp_credito;
+	}
+	
+	public String getCcpra_dt_acquisto(){
+		return ccpra_dt_acquisto;
+	}
+
+	public void setCcpra_dt_acquisto(String ccpra_dt_acquisto){
+		this.ccpra_dt_acquisto = ccpra_dt_acquisto;
 	}
 	
 	public String getCcpra_tp_acquisto(){

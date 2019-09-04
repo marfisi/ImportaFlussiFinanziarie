@@ -11,7 +11,8 @@ import it.cascino.importaflussifinanziarie.dbas.model.pkey.AsFinax0fPKey;
 @Entity(name="Finax0f")
 @NamedQueries({
 	@NamedQuery(name = "AsFinax0f.findAll", query = "SELECT a FROM Finax0f a order by a.id.fnfin, a.id.fncop"),
-	@NamedQuery(name = "AsFinax0f.findByFncop", query = "SELECT a FROM Finax0f a WHERE a.id.fnfin = :fnfin and a.id.fncop = :fncop")
+	@NamedQuery(name = "AsFinax0f.findByFncop", query = "SELECT a FROM Finax0f a WHERE a.id.fnfin = :fnfin and a.id.fncop = :fncop"),
+	@NamedQuery(name = "AsFinax0f.findByLikeFncop", query = "SELECT a FROM Finax0f a WHERE a.id.fnfin = :fnfin and a.id.fncop like :fncop order by a.id.fncop")
 })
 public class AsFinax0f implements Serializable{
 	private static final long serialVersionUID = 1L;

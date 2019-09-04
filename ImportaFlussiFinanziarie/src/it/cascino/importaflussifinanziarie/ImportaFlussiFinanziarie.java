@@ -25,6 +25,7 @@ import it.cascino.importaflussifinanziarie.righeflussi.RowInput;
 import it.cascino.importaflussifinanziarie.righeflussi.RowInputAgos;
 import it.cascino.importaflussifinanziarie.righeflussi.RowInputCompass;
 import it.cascino.importaflussifinanziarie.righeflussi.RowInputFindomestic;
+import it.cascino.importaflussifinanziarie.righeflussi.RowInputFindomesticSWR;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -38,6 +39,8 @@ public class ImportaFlussiFinanziarie{
 		
 	// AS400
 	private AsFinax0fDao asFinax0fDao = new AsFinax0fDaoMng();
+	
+	private List<AsFinax0f> asFinax0fLs;
 	
 	private File fileInput = null;
 	private List<RowInput> rowInputLs = new ArrayList<RowInput>();
@@ -72,6 +75,8 @@ public class ImportaFlussiFinanziarie{
 			while((line = in.readLine()) != null){
 				if(finanziaria.equals("FIN")){
 					rowInput = new RowInputFindomestic(line);
+				}else if(finanziaria.equals("FINSWR")){
+					rowInput = new RowInputFindomesticSWR(line);
 				}else if(finanziaria.equals("COM")){
 					rowInput = new RowInputCompass(line);
 				}else if(finanziaria.equals("AGO")){
@@ -100,23 +105,33 @@ public class ImportaFlussiFinanziarie{
 		while(iter_rowInputLs.hasNext()){
 			
 			String codicePratica = "";
-			if(finanziaria.equals("FIN")){
+			if(StringUtils.equals(finanziaria, "FIN")){
 				rowInput = (RowInputFindomestic)iter_rowInputLs.next();
 				codicePratica =  ((RowInputFindomestic)rowInput).getCir();
-			}else if(finanziaria.equals("COM")){
+			}else if(StringUtils.equals(finanziaria, "FINSWR")){
+				rowInput = (RowInputFindomesticSWR)iter_rowInputLs.next();
+				codicePratica =  ((RowInputFindomesticSWR)rowInput).getCir();
+			}else if(StringUtils.equals(finanziaria, "COM")){
 				rowInput = (RowInputCompass)iter_rowInputLs.next();
 				codicePratica =  ((RowInputCompass)rowInput).getCod_Pratica();
-			}else if(finanziaria.equals("AGO")){
+			}else if(StringUtils.equals(finanziaria, "AGO")){
 				rowInput = (RowInputAgos)iter_rowInputLs.next();
 				codicePratica =  ((RowInputAgos)rowInput).getCd_pratica();
 			}else{
 				log.error("non e' possibile questa finanziaria: " + finanziaria);
 			}
 			
-			AsFinax0f asFinax0f = asFinax0fDao.getDaFnfinFncop(finanziaria, codicePratica);
+			String finStr = finanziaria;
+			if(StringUtils.equals(finanziaria, "FINSWR")){
+				finStr = "FIN";
+			}
+			AsFinax0f asFinax0f = asFinax0fDao.getDaFnfinFncop(finStr, codicePratica);
 			if(asFinax0f != null){
-				log.info("Pratica " + asFinax0f.getId() + " gia' presente");
-				continue;		// se la pratica e' gia' presente la salto
+				// e' gia' presente, ma se e' una AGOS Fastline, devo comunque analizzare il rigo
+				if(!(StringUtils.equals(finanziaria, "AGO") && (StringUtils.equals(asFinax0f.getFntab(), "FSF") || StringUtils.equals(asFinax0f.getFntab(), "FSV")))){
+					log.info("Pratica " + asFinax0f.getId() + " gia' presente");
+					continue;		// se la pratica e' gia' presente la salto
+				}
 			}
 			
 			// se sono qui' la pratica non e' stata trovata, si deve inserire/importare
@@ -145,6 +160,38 @@ public class ImportaFlussiFinanziarie{
 				asFinax0fDao.salva(asFinax0f);
 				
 				log.info("Pratica " + asFinax0f.getId() + " inserita");	
+			}else if(finanziaria.equals("FINSWR")){
+				RowInputFindomesticSWR rowInputFindomesticSWR = (RowInputFindomesticSWR)rowInput;
+				
+				asFinax0f = new AsFinax0f();
+				AsFinax0fPKey asFinax0fPKey = new AsFinax0fPKey();
+				asFinax0fPKey.setFnfin("FIN");	// la finanziaria e' comunque findomestic
+				asFinax0fPKey.setFncop(rowInputFindomesticSWR.getCir());
+				asFinax0f.setId(asFinax0fPKey);
+				asFinax0f.setFncpv("3186244");	// Showroom Termini
+				asFinax0f.setFndal(Integer.parseInt(rowInputFindomesticSWR.getData()));
+				asFinax0f.setFndav(0);
+				BigDecimal bd = new BigDecimal(rowInputFindomesticSWR.getFinanziato());
+				bd = bd.subtract(new BigDecimal(rowInputFindomesticSWR.getSip()));
+				asFinax0f.setFnimp(bd.floatValue());
+				try{
+					asFinax0f.setFnims(-Float.parseFloat(rowInputFindomesticSWR.getTrattenute()));
+				}catch(NumberFormatException e){
+					asFinax0f.setFnims(0.0f);
+				}
+				try{
+					asFinax0f.setFniml(Float.parseFloat(rowInputFindomesticSWR.getLiquidato()));
+				}catch(NumberFormatException e){
+					asFinax0f.setFniml(0.0f);
+				}
+				asFinax0f.setFnbap((rowInputFindomesticSWR.getModPag().compareTo("B") == 0) ? "B" : "B");
+				asFinax0f.setFnras(rowInputFindomesticSWR.getCliente());
+				asFinax0f.setFntab("ND");
+				asFinax0f.setFnrie(" ");
+				
+				asFinax0fDao.salva(asFinax0f);
+				
+				log.info("Pratica " + asFinax0f.getId() + " inserita");	
 			}else if(finanziaria.equals("COM")){
 				RowInputCompass rowInputCompass = (RowInputCompass)rowInput;
 				
@@ -156,9 +203,21 @@ public class ImportaFlussiFinanziarie{
 				asFinax0f.setFncpv(rowInputCompass.getCod_PuntoVendita());
 				asFinax0f.setFndal(Integer.parseInt(rowInputCompass.getDataLiquidazione()));
 				asFinax0f.setFndav(Integer.parseInt(rowInputCompass.getDt_Valuta()));
-				asFinax0f.setFnimp(Float.parseFloat(rowInputCompass.getImporto_Finanziato()));
-				asFinax0f.setFnims(Float.parseFloat(rowInputCompass.getContributoDealer()));
-				asFinax0f.setFniml(Float.parseFloat(rowInputCompass.getImporto_Liquidato()));
+				try{
+					asFinax0f.setFnimp(Float.parseFloat(rowInputCompass.getImporto_Finanziato()));
+				}catch(NumberFormatException e){
+					asFinax0f.setFnimp(0.0f);
+				}
+				try{
+					asFinax0f.setFnims(Float.parseFloat(rowInputCompass.getContributoDealer()));
+				}catch(NumberFormatException e){
+					asFinax0f.setFnims(0.0f);
+				}
+				try{
+					asFinax0f.setFniml(Float.parseFloat(rowInputCompass.getImporto_Liquidato()));
+				}catch(NumberFormatException e){
+					asFinax0f.setFniml(0.0f);
+				}
 				asFinax0f.setFnbap((rowInputCompass.getCausalePlf().compareTo("CLQ") == 0) ? "P" : "B");
 				asFinax0f.setFnras(rowInputCompass.getCliente());
 				asFinax0f.setFntab(rowInputCompass.getTabella_Utilizzata());
@@ -178,24 +237,71 @@ public class ImportaFlussiFinanziarie{
 				asFinax0f.setFncpv(rowInputAgos.getCd_punto_vendita());
 				asFinax0f.setFndal(Integer.parseInt(rowInputAgos.getData_liquidazione()));
 				asFinax0f.setFndav(0);
-				asFinax0f.setFnimp(Float.parseFloat(rowInputAgos.getIm_finanziato()));
+				try{
+					asFinax0f.setFnimp(Float.parseFloat(rowInputAgos.getIm_finanziato()));
+				}catch(NumberFormatException e){
+					asFinax0f.setFnimp(0.0f);
+				}
 				try{
 					asFinax0f.setFnims(Float.parseFloat(rowInputAgos.getIm_contributo()));
 				}catch(NumberFormatException e){
 					asFinax0f.setFnims(0.0f);
 				}
-				asFinax0f.setFniml(Float.parseFloat(rowInputAgos.getIm_erogato()));
+				try{
+					asFinax0f.setFniml(Float.parseFloat(rowInputAgos.getIm_erogato()));
+				}catch(NumberFormatException e){
+					asFinax0f.setFniml(0.0f);
+				}
 				asFinax0f.setFnbap("B");
 				asFinax0f.setFnras(rowInputAgos.getCliente());
 				asFinax0f.setFntab(rowInputAgos.getTabella_finanziaria());
-				if(StringUtils.equals(rowInputAgos.getTp_credito(), "R")){
-					asFinax0f.setFntab("FSL");
+				if(StringUtils.equals(rowInputAgos.getTp_credito(), "R")){	// FastLine 
+					asFinax0f.setFntab("F..");
+					if(StringUtils.equals(rowInputAgos.getCcpra_tp_acquisto(), "F")){
+						asFinax0f.setFntab("FSF");		// FSF e' alla creazione
+					}else if(StringUtils.equals(rowInputAgos.getCcpra_tp_acquisto(), "V")){
+						asFinax0f.setFntab("FSV");		// FSV e' dalla seconda in poi (ovvero i voucher)
+						// in caso di voucher come data al posto della data liquidazione metto quella di operazione
+						asFinax0f.setFndal(Integer.parseInt(rowInputAgos.getCcpra_dt_acquisto()));
+					}
 				}
 				asFinax0f.setFnrie(" ");
 				
-				asFinax0fDao.salva(asFinax0f);
-				
-				log.info("Pratica " + asFinax0f.getId() + " inserita");
+				Boolean daInserire = true;
+				asFinax0fLs = asFinax0fDao.getDaFnfinLikeFncop(finanziaria, codicePratica);
+				int asFinax0fLsNumElem = asFinax0fLs.size();
+				AsFinax0f asFinax0fInTabella = null;
+				Iterator<AsFinax0f> iter_asFinax0f = asFinax0fLs.iterator();
+				while(iter_asFinax0f.hasNext()){
+					asFinax0fInTabella = iter_asFinax0f.next();
+					
+					if((StringUtils.equals(asFinax0f.getFntab(), "FSF") && (StringUtils.equals(asFinax0f.getId().getFncop(), StringUtils.trim(asFinax0fInTabella.getId().getFncop()))))){
+						daInserire = false;
+						break;
+					}
+					
+					if((StringUtils.equals(asFinax0f.getFntab(), "FSV")) && (StringUtils.equals(asFinax0fInTabella.getFntab(), "FSV")) && (StringUtils.startsWith(asFinax0fInTabella.getId().getFncop(), StringUtils.join(asFinax0f.getId().getFncop(), ".")))){
+						if((Integer.compare(asFinax0fInTabella.getFndal(), asFinax0f.getFndal()) == 0) && (Float.compare(asFinax0fInTabella.getFnimp(), asFinax0f.getFnimp()) == 0)){
+							daInserire = false;
+							break;
+						}
+					}
+				}
+
+				if(daInserire){
+					if(StringUtils.equals(asFinax0f.getFntab(), "FSV")){
+						if(Integer.compare(asFinax0fLsNumElem, 0) == 0){
+							asFinax0fLsNumElem = 1;
+						}
+						asFinax0f.getId().setFncop(StringUtils.join(asFinax0f.getId().getFncop(), ".", Integer.toString(asFinax0fLsNumElem)));
+					}
+					
+					asFinax0fDao.salva(asFinax0f);
+					
+					log.info("Pratica " + asFinax0f.getId() + " inserita");
+				}else{
+					log.info("Pratica " + asFinax0f.getId() + " gia' presente");
+				}
 			}else{
 				log.error("non e' possibile questa finanziaria: " + finanziaria);
 			}

@@ -100,6 +100,26 @@ public class AsFinax0fDaoMng implements AsFinax0fDao, Serializable{
 		return o;
 	}
 	
+	@SuppressWarnings("unchecked")
+	public List<AsFinax0f> getDaFnfinLikeFncop(String fnfin, String fncop){
+		List<AsFinax0f> o = null;
+		try{
+			try{
+				utx.begin();
+				Query query = em.createNamedQuery("AsFinax0f.findByLikeFncop");
+				query.setParameter("fnfin", fnfin);
+				query.setParameter("fncop", fncop.toUpperCase() + "%");
+				o = (List<AsFinax0f>)query.getResultList();
+			}catch(NoResultException e){
+				o = null;
+			}
+			utx.commit();
+		}catch(Exception e){
+			log.fatal(e.toString());
+		}
+		return o;
+	}
+	
 	public void close(){
 		res.close();
 		log.info("chiuso");

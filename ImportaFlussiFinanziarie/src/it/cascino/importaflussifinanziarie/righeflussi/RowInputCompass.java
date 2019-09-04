@@ -39,7 +39,7 @@ public class RowInputCompass extends RowInput{
 		setCausalePlf("");
 		setImportoPl("");
 
-		String strTmp = line;
+		String strTmp = StringUtils.join(line, this.getDelimitator());
 		
 		// salto: convenzionato
 		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1).trim();
@@ -105,7 +105,7 @@ public class RowInputCompass extends RowInput{
 		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1);
 		
 		// salto: importoPl
-		strTmp = "";
+		strTmp = strTmp.substring(strTmp.indexOf(getDelimitator())+1);
 	}
 	
 	public String getConvenzionato(){
