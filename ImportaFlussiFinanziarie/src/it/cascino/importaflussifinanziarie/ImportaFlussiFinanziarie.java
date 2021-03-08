@@ -75,7 +75,7 @@ public class ImportaFlussiFinanziarie{
 			while((line = in.readLine()) != null){
 				if(finanziaria.equals("FIN")){
 					rowInput = new RowInputFindomestic(line);
-				}else if(finanziaria.equals("FINSWR")){
+				}else if(StringUtils.equals(finanziaria, "FINST") || StringUtils.equals(finanziaria, "FINSB")){
 					rowInput = new RowInputFindomesticSWR(line);
 				}else if(finanziaria.equals("COM")){
 					rowInput = new RowInputCompass(line);
@@ -104,13 +104,16 @@ public class ImportaFlussiFinanziarie{
 		rowInput = (RowInput)iter_rowInputLs.next();
 		while(iter_rowInputLs.hasNext()){
 			
+			String finStr = finanziaria;
+			
 			String codicePratica = "";
 			if(StringUtils.equals(finanziaria, "FIN")){
 				rowInput = (RowInputFindomestic)iter_rowInputLs.next();
 				codicePratica =  ((RowInputFindomestic)rowInput).getCir();
-			}else if(StringUtils.equals(finanziaria, "FINSWR")){
+			}else if(StringUtils.equals(finanziaria, "FINST") || StringUtils.equals(finanziaria, "FINSB")){
 				rowInput = (RowInputFindomesticSWR)iter_rowInputLs.next();
 				codicePratica =  ((RowInputFindomesticSWR)rowInput).getCir();
+				finStr = "FIN";
 			}else if(StringUtils.equals(finanziaria, "COM")){
 				rowInput = (RowInputCompass)iter_rowInputLs.next();
 				codicePratica =  ((RowInputCompass)rowInput).getCod_Pratica();
@@ -121,10 +124,6 @@ public class ImportaFlussiFinanziarie{
 				log.error("non e' possibile questa finanziaria: " + finanziaria);
 			}
 			
-			String finStr = finanziaria;
-			if(StringUtils.equals(finanziaria, "FINSWR")){
-				finStr = "FIN";
-			}
 			AsFinax0f asFinax0f = asFinax0fDao.getDaFnfinFncop(finStr, codicePratica);
 			if(asFinax0f != null){
 				// e' gia' presente, ma se e' una AGOS Fastline, devo comunque analizzare il rigo
@@ -160,15 +159,25 @@ public class ImportaFlussiFinanziarie{
 				asFinax0fDao.salva(asFinax0f);
 				
 				log.info("Pratica " + asFinax0f.getId() + " inserita");	
-			}else if(finanziaria.equals("FINSWR")){
+			}else if(StringUtils.equals(finanziaria, "FINST") || StringUtils.equals(finanziaria, "FINSB")){
 				RowInputFindomesticSWR rowInputFindomesticSWR = (RowInputFindomesticSWR)rowInput;
 				
 				asFinax0f = new AsFinax0f();
 				AsFinax0fPKey asFinax0fPKey = new AsFinax0fPKey();
-				asFinax0fPKey.setFnfin("FIN");	// la finanziaria e' comunque findomestic
+				asFinax0fPKey.setFnfin(finStr);	// la finanziaria e' comunque findomestic
 				asFinax0fPKey.setFncop(rowInputFindomesticSWR.getCir());
 				asFinax0f.setId(asFinax0fPKey);
-				asFinax0f.setFncpv("3186244");	// Showroom Termini
+				switch(finanziaria){
+					case "FINST":
+						asFinax0f.setFncpv("3186244");	// Showroom Termini
+						break;
+					case "FINSB":
+						asFinax0f.setFncpv("4091666");	// Showroom Bagheria
+						break;
+					default:
+						asFinax0f.setFncpv("9999999");
+						break;
+				}
 				asFinax0f.setFndal(Integer.parseInt(rowInputFindomesticSWR.getData()));
 				asFinax0f.setFndav(0);
 				BigDecimal bd = new BigDecimal(rowInputFindomesticSWR.getFinanziato());
@@ -269,7 +278,6 @@ public class ImportaFlussiFinanziarie{
 				
 				Boolean daInserire = true;
 				asFinax0fLs = asFinax0fDao.getDaFnfinLikeFncop(finanziaria, codicePratica);
-				int asFinax0fLsNumElem = asFinax0fLs.size();
 				AsFinax0f asFinax0fInTabella = null;
 				Iterator<AsFinax0f> iter_asFinax0f = asFinax0fLs.iterator();
 				while(iter_asFinax0f.hasNext()){
@@ -290,10 +298,9 @@ public class ImportaFlussiFinanziarie{
 
 				if(daInserire){
 					if(StringUtils.equals(asFinax0f.getFntab(), "FSV")){
-						if(Integer.compare(asFinax0fLsNumElem, 0) == 0){
-							asFinax0fLsNumElem = 1;
-						}
-						asFinax0f.getId().setFncop(StringUtils.join(asFinax0f.getId().getFncop(), ".", Integer.toString(asFinax0fLsNumElem)));
+						int finNumVoucher = asFinax0fDao.getDaFnfinLikeFncop(finanziaria, StringUtils.join(codicePratica, ".")).size();	// con il "." sono i voucher (FSV)
+						finNumVoucher = finNumVoucher + 1;
+						asFinax0f.getId().setFncop(StringUtils.join(asFinax0f.getId().getFncop(), ".", Integer.toString(finNumVoucher)));
 					}
 					
 					asFinax0fDao.salva(asFinax0f);
